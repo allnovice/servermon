@@ -2,7 +2,7 @@
 
 [![Python](https://img.shields.io/badge/Python-3.11-blue.svg)](https://www.python.org/)
 [![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-Automated-green.svg)](https://github.com/)
-[![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-orange.svg)](https://streamlit.io/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-orange.svg)](https://servermon-vdfavcmkqwrcowe8uixahu.streamlit.app/)
 
 Monitor the uptime and status of your APIs and log them to a PostgreSQL database (Neon/Postgres). Display server status on a Streamlit dashboard.
 
