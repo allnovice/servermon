@@ -2,8 +2,6 @@ name: Monitor Users API
 
 on:
   workflow_dispatch: # Manual trigger
-  schedule:
-    - cron: "0 * * * *" # Every hour
 
 jobs:
   check-server:
