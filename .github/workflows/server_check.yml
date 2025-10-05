@@ -1,0 +1,30 @@
+name: Server Status Check
+
+on:
+  workflow_dispatch:   # allows manual run
+  schedule:
+    - cron: '0 * * * *'   # runs every hour
+
+jobs:
+  check-server:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests psycopg2-binary
+
+      - name: Run server check
+        env:
+          NEON_CONN: ${{ secrets.NEON_CONN }}
+        run: |
+          python server_check.py
