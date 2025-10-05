@@ -1,44 +1,63 @@
-name: Check Users API
+name: Monitor Users API
 
 on:
-  workflow_dispatch:   # manual trigger
+  workflow_dispatch: # Manual trigger
   schedule:
-    - cron: '0 * * * *'  # every hour
+    - cron: "0 * * * *" # Every hour
 
 jobs:
-  check-api:
+  check-server:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
 
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+
       - name: Install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y curl postgresql-client
+          python -m pip install --upgrade pip
+          pip install requests psycopg2-binary python-dotenv
 
-      - name: Check Users API
-        id: api_check
-        run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://related-certain-frog.ngrok-free.app/users)
-          if [ "$STATUS" -eq 200 ]; then
-            RESULT='UP'
-          else
-            RESULT='DOWN'
-          fi
-          echo "status=$RESULT" >> $GITHUB_OUTPUT
-
-      - name: Insert status into DB
+      - name: Check Users API and insert status
         env:
-          DB_URL: ${{ secrets.NEON_CONN }}
+          NEON_CONN: ${{ secrets.NEON_CONN }}
         run: |
-          psql "$DB_URL" <<EOF
-          INSERT INTO server_status (server_name, status, checked_at, timestamp_local)
-          VALUES (
-            'Users API',
-            '${{ steps.api_check.outputs.status }}' = 'UP',
-            NOW(),
-            (NOW() AT TIME ZONE 'UTC') + INTERVAL '8 hours'
-          );
+          python <<EOF
+          import os
+          import requests
+          import psycopg2
+          from datetime import datetime, timezone, timedelta
+
+          # Connect to DB
+          conn_str = os.environ["NEON_CONN"]
+          conn = psycopg2.connect(conn_str)
+          cur = conn.cursor()
+
+          # Check Users API
+          url = "https://related-certain-frog.ngrok-free.app/users"
+          try:
+              r = requests.get(url, timeout=10)
+              status = "UP" if r.status_code == 200 else "DOWN"
+          except:
+              status = "DOWN"
+
+          # Current UTC and PH local time
+          utc_now = datetime.now(timezone.utc)
+          ph_now = utc_now + timedelta(hours=8)
+
+          # Insert into table
+          cur.execute(
+              """
+              INSERT INTO server_status (server_name, status, timestamp, timestamp_local)
+              VALUES (%s, %s, %s, %s)
+              """,
+              ("Users API", status, utc_now, ph_now)
+          )
+          conn.commit()
+          cur.close()
+          conn.close()
           EOF
